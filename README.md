@@ -3,6 +3,22 @@ vm14hw2
 
 Virtual Machine Homework 2, Spring 2014
 
+## Important Files & Directories
+
+- `arch/arm/kvm`
+
+    * `arm.c`
+    * `handle_exit.h`
+    * `trace.h`
+
+- `arch/arm/include/asm`
+
+    * `kvm_asm.h`
+
+- `include/include/asm`
+
+    * `kvm_host.h`
+
 ## Some random notes
 
 kvm_arch_vcpu_ioctl_run
