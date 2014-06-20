@@ -65,15 +65,98 @@ will be forwared to the QEMU emulation system.
 After entering the hypervisor mode of the ARM processor, the KVM kernel module can
 fully realize its potential in simplifying and speeding up the CPU virtualization.
 The interface of the KVM kernel module to the outside world is, as usual, via the
-`ioctl` function. The handler `kvm_vcpu_ioctl` is at `virt/kvm/kvm_main.c` with
-architecture-dependent functionalities be forwarded to, say, `kvm_arch_vcpu_ioctl1`
-in `arch/arm/kvm/arm.c`.
+`ioctl` function. The handler `kvm_vm_ioctl` and `kvm_vcpu_ioctl` are at
+`virt/kvm/kvm_main.c` with architecture-dependent functionalities be forwarded to,
+say, `kvm_arch_vcpu_ioctl1` in `arch/arm/kvm/arm.c`.
 
 It mainly has the following instructions:
 
+1. Create a virtual CPU
 
+    ```cpp
+    static long kvm_vm_ioctl(/* ... */) {
+      /* ... */
+      switch (ioctl) {
+      case KVM_CREATE_VCPU:
+        r = kvm_vm_ioctl_create_vcpu(kvm, arg);
+        break;
+        /* ... */
+
+    static int kvm_vm_ioctl_create_vcpu(/* ... */) {
+      /* ... */
+      vcpu = kvm_arch_vcpu_create(kvm, id);
+      /* ... */
+      r = kvm_arch_vcpu_setup(vcpu);
+      /* ... */
+
+    struct kvm_vcpu *kvm_arch_vcpu_create(/* ... */) {
+      int err; struct kvm_vcpu *vcpu;
+      vcpu = kmem_cache_zalloc(kvm_vcpu_cache, GFP_KERNEL);
+      /* ... */
+      err = kvm_vcpu_init(vcpu, kvm, id);
+      /* ... */
+    ```
+
+1. Run on a virtual CPU
+
+    ```cpp
+    static long kvm_vcpu_ioctl(/* ... */) {
+      /* ... */
+      switch (ioctl) {
+      case KVM_RUN:
+        r = -EINVAL;
+        if (arg)
+          goto out;
+        r = kvm_arch_vcpu_ioctl_run(vcpu, vcpu->run);
+        trace_kvm_userspace_exit(vcpu->run->exit_reason, r);
+        break;
+        /* ... */
+
+    int kvm_arch_vcpu_ioctl_run(/* ... */) {
+      /* our main modifications here! */
+      /* ... *virtualize* the cpu; enter guest mode and execute! */
+    ```
+
+1. Get/set virtual CPU register
+1. Initialize a ARM CPU from use request
+
+    ```cpp
+    long kvm_arch_vcpu_ioctl(/* ... */) {
+      /* ... */
+      switch (ioctl) {
+      case KVM_ARM_VCPU_INIT: {
+        /* ... */
+    ```
+
+To use CPU virtualization, we shall more or less go through the above two
+instructions.
 
 ### Implementation
+
+Our implementation made two changes to the KVM, and we simply utilize other existing
+tracing points to make our observation. The first one is add an *exit count* to the
+original `kvm_exit` trace event. `kvm_exit` traces when the processor leaves non-
+hypervisor mode and back to the KVM run loop:
+
+```cpp
+ while (ret > 0) {
+   /* ... */
+   local_irq_disable();
+   /* ... */
+   trace_kvm_entry(*vcpu_pc(vcpu));
+   kvm_guest_enter();
+   vcpu->mode = IN_GUEST_MODE;
+
+   ret = kvm_call_hyp(__kvm_vcpu_run, vcpu);
+
+   vcpu->mode = OUTSIDE_GUEST_MODE;
+   vcpu->arch.last_pcpu = smp_processor_id();
+   kvm_guest_exit();
+-  trace_kvm_exit(*vcpu_pc(vcpu));
++  ++vcpu->cnt_exit;
++  trace_kvm_exit(*vcpu_pc(vcpu), vcpu->cnt_exit);
+   /* ... */
+```
 
 ### Trace Result
 
