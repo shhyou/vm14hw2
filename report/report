@@ -1,0 +1,14 @@
+** Fourth: Host file system
+
+We were confused about the purpose of Part 4 requirement initially. Furthermore, we did not know how to build up the host system. We assumed that the qemu-debootstrap was an extension program which was appended on the previous host system. However, it was not the case. This type of file system was different from those based on image file, instead, it was stored in a folder. After storing the whole file system into an image file, we were able to boot up the system.
+
+A next interesting point was encountered when we testing benchmarks in both host and guest system, we found out that some binary which was based on ARM architecture in host system could not be executed in guest system, but some of them could. After doing some experiments, we finally figured out the reason. Some benchmarks used dynamic library linking instead of static library linking. Thus, once host system library was different from the guest one, the binary file would encounter a load error.
+
+
+
+
+** Experiments
+
+We used five benchmarks to test the performance of each virtual machine, including telecomm/adpcm, telecomm/gsm, telecomm/CRC32, telecomm/FFT, and comsumer/jpeg. The following table shows the experiment result. There are five major rows, each stands for a benchmark. There are five columns, including local system, host system, one guest system on host system, and two guest systems on host system. Two-guest-systems experiment is performed to test system loading, when two same benchmarks were ran on two guest system simultaneously.
+
+Some interesting observation 
