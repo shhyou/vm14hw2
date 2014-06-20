@@ -11,9 +11,9 @@
 
     Our code can be found at https://github.com/suhorng/vm14hw2
 
-    > We study the same ISA system virtual machine on a simulated ARM Cortex A15x1
-    platform. We build one host VM which runs one or more guest VMs, trace the hypervisor
-    traps in the **kvm** module. We also run serveral benchmarks on multiple guest VMs
+    > We studied the same ISA system virtual machine on a simulated ARM Cortex A15x1
+    platform. We built one host VM which ran one or more guest VMs, traced the hypervisor
+    traps in the **kvm** module. We also ran serveral benchmarks on multiple guest VMs
     to observe the loadings.
 
 ![VM screenshot](./host-guest-qemu.jpg)
@@ -26,10 +26,10 @@ result.
 
 ### Virtual Machine Setup Difficulties
 
-1. We chose to use the MMC file system instead of the NFS since there is little setup
-required to use a disk image, and its construction is similar to the guest machine.
+1. We chose to use the MMC file system instead of the NFS since there was little setup
+required to use a disk image, and its construction was similar to the guest machine.
 However, we initially only gave the host machine a 512MB disk, and was unable to put the 
-guest inside the host for it was too large. Later we rebuild a host with enough disk space.
+guest inside the host since it was too large. Later, we rebuilt a host with enough disk space.
 
 1. The given `qemu-system-arm` startup command was wrong. The given one was
 
@@ -52,7 +52,7 @@ guest inside the host for it was too large. Later we rebuild a host with enough 
     enough memory to run.
 
 After booting up the host/guest virtual machine, we checked for its `cpuinfo` and
-happliy found that our virtual machines are indeed working.
+happliy found that our virtual machines were indeed working.
 
 ![cpuinfo](./cpuinfo.jpg)
 
@@ -60,18 +60,18 @@ happliy found that our virtual machines are indeed working.
 
 XXX TODO insert KVM architecture graph here
 
-As depicted in the graph, the KVM is a kernel module running inside the host VM that
+As depicted in the graph, the KVM was a kernel module running inside the host VM that
 helps the guest VM to virtualize the CPU. For the I/O part, guest-issued I/O requests
-will be forwared to the QEMU emulation system.
+would be forwared to the QEMU emulation system.
 
-After entering the hypervisor mode of the ARM processor, the KVM kernel module can
+After entering the hypervisor mode of the ARM processor, the KVM kernel module could
 fully realize its potential in simplifying and speeding up the CPU virtualization.
-The interface of the KVM kernel module to the outside world is, as usual, via the
-`ioctl` function. The handler `kvm_vm_ioctl` and `kvm_vcpu_ioctl` are at
+The interface of the KVM kernel module to the outside world was, as usual, via the
+`ioctl` function. The handler `kvm_vm_ioctl` and `kvm_vcpu_ioctl` were at
 `virt/kvm/kvm_main.c` with architecture-dependent functionalities be forwarded to,
-say, `kvm_arch_vcpu_ioctl1` in `arch/arm/kvm/arm.c`.
+said, `kvm_arch_vcpu_ioctl1` in `arch/arm/kvm/arm.c`.
 
-It mainly has the following instructions:
+It mainly had the following instructions:
 
 1. Create a virtual CPU
 
@@ -164,8 +164,8 @@ hypervisor mode and back to the KVM run loop:
 
 Then we modified the `kvm_exit` trace-event in `arch/arm/kvm/trace.h` to print exit
 count. The second one was to add our own trace event to record the HVC trap count, which
-is the hypervisor trap in ARM hypervisor mode. According to the ARM architecture
-reference manual, this exception happens whenever an `HVC` instruction is issued
+was the hypervisor's trap in ARM hypervisor mode. According to the ARM architecture
+reference manual, this exception happened whenever an `HVC` instruction was issued
 (i.e. the guest requested to switch to hypervisor mode. This might happen in a
 `virtio` defice) or when some exceptions was routed to the hypervisor.
 
@@ -197,7 +197,7 @@ reference manual, this exception happens whenever an `HVC` instruction is issued
     ```
 
 1. Insert out trace events to appropiate points. We figured out that the main loop
-    will check for exception upon every exit, i.e.
+    would check for exception upon every exit, i.e.
 
     ```cpp
     int kvm_arch_vcpu_ioctl_run(/* ... */) {
@@ -251,16 +251,16 @@ the `kvm_vcpu` structure defined in `include/linux/kvm_host.h`:
 ```
 
 Upon tracing the code, we actually found a trace event `trace_kvm_hvc` in the HVC
-handleing function, `handle_hvc`. That was, we actually didn't really need to create
+handleing function, `handle_hvc`. That was, we actually did not really need to create
 a brand new trace event. Anyway, we did it for fun.
 
 ### Trace Result
 
-The result was interesting. Since traps to the hypervisor mode is non-stopping, we
-cannot count the exact number of traps during guest boot-up. We hence counts the
+The result was interesting. Since traps to the hypervisor mode was non-stopping, we
+could not count the exact number of traps during guest boot-up. We hence counted the
 trap number of guest boot-up followed by an immediate `poweroff`.
 
-The result count is as follows.
+The result count was as follows.
 
 ```
 179.182896: kvm_entry:  PC: 0x802c1f24
@@ -271,7 +271,7 @@ The result count is as follows.
 179.200710: kvm_userspace_exit: reason restart (4)
 ```
 
-And running it again turned out to have similar trap counts:
+Running it again turned out to have similar trap counts:
 
 ```
 181.829151: kvm_entry:  PC: 0x802c1f24
@@ -305,36 +305,36 @@ event in some places):
 ```
 
 Similar places occured many times, each time having different PC. Currently we
-have no explanation about it.
+had no explanation about it.
 
 ### Discussions
 
 When we booted either the host or the guest, there were some places where the boot
-process hangs very long. We didn't know if it was caused by some I/O failure or
+process hung very long. We did not know if it was caused by some I/O failure or
 wrong device settings, but we suspected that it was where the strange trace
 messages get logged.
 
 Apart from the strange HVC trap events, we also found that the time in the guest
-virtual machine differs from that of the actual running time on the host machine.
-This might be an indicator on whether the virtualization is effecient.
+virtual machine differed from that of the actual running time on the host machine.
+This might be an indicator on whether the virtualization was effecient.
 
 ![guest running time](./host-running-client-time.jpg)
 
-In the above screenshot, the guest is running to 42.9s where the host actually runs
-1 minute. So the speed in the guest is only about 2/3 of the host in this case. Note
-that the guest time differs from the above trace results since we're not enabling
+In the above screenshot, the guest was running to 42.9s where the host actually ran
+1 minute. So the speed in the guest was only about 2/3 of the host in this case. Note
+that the guest time differed from the above trace results since we were not enabling
 tracing this time. If so, the running time will be much larger.
 
 We once tried to find the trace event `kvm_emulate_insn` on our machine. However,
-later we discovered that it only exists on x86 machines. This means that the ARM
-processor is actually doing well in supporting virtualization so we don't need
+later we discovered that it only exists on x86 machines. This meant that the ARM
+processor was actually doing well in supporting virtualization so we did not need
 much emulation.
 
-To support this argument, we may not that the exit count (from `kvm_exit`) and the
-HVC trap count (from `kvm_exchvc`) aren't equal, but the former number is very
-close to the latter one. This means that for most of the traps (or any other reason)
-that causes the virtualization to get back to the hypervisor, only a small amount
-of nubmer is caused by other routed exceptions. We spent most of the time on hypervisor
+To support this argument, we might note that the exit count (from `kvm_exit`) and the
+HVC trap count (from `kvm_exchvc`) were not equal, but the former number was very
+close to the latter one. This meant that for most of the traps (or any other reason)
+that caused the virtualization to get back to the hypervisor, only a small amount
+of nubmer was caused by other routed exceptions. We spent most of the time on hypervisor
 calls, and for other times we almost avoided other overheads.
 
 ## Part II - Experimenting Multiple Guests
@@ -361,25 +361,24 @@ error.
 We used five benchmarks from the MiBench (http://www.eecs.umich.edu/mibench/source.html)
 to test the performance of each virtual machine, including `telecomm/adpcm`,
 `telecomm/gsm`, `telecomm/CRC32`, `telecomm/FFT`, and `comsumer/jpeg`. The
-following table shows the experiment result. There are five major rows, each stands
+following table shows the experiment result. There were five major rows, each standed
 for a benchmark.
 
-There are five columns, including local system, host system, one
+There were five columns, including local system, host system, one
 guest system on host system, and two guest systems on host system. Two-guest-systems
 experiment was designed to test system performance with heavy loading. To be
-specific, two same benchmarks were ran on two guest system individually, and
-simultaneously.
+specific, two same benchmarks ran on two guest system individually, and simultaneously.
 
 ![benchmark](./table.jpg)
 
 ### Discussions
 
-There is a huge performance gap between local and host system. However, it is
+There was a huge performance gap between local and host system. However, it was
 surprising that guest system has little overhead when compared with host system.
-The reason may be that ARM-to-X86 simulation is harder than ARM-to-ARM one.
+The reason might be that ARM-to-X86 simulation was harder than ARM-to-ARM one.
 
-When two guest system is running on one same host system, performance is about
-half of the original one, which sounds pretty reasonable. The slightly difference
+When two guest system was running on one same host system, performance was about
+half of the original one, which sounded pretty reasonable. The slightly difference
 on execution time between two guest systems may be caused by context-switch
 priority.
 
