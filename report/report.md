@@ -133,29 +133,119 @@ instructions.
 
 ### Implementation
 
-Our implementation made two changes to the KVM, and we simply utilize other existing
-tracing points to make our observation. The first one is add an *exit count* to the
+Our implementation made two changes to the KVM, and we simply utilized other existing
+tracing points to make our observation. The first one was to add an *exit count* to the
 original `kvm_exit` trace event. `kvm_exit` traces when the processor leaves non-
 hypervisor mode and back to the KVM run loop:
 
 ```cpp
- while (ret > 0) {
+ int kvm_arch_vcpu_ioctl_run(/* ... */) {
    /* ... */
-   local_irq_disable();
-   /* ... */
-   trace_kvm_entry(*vcpu_pc(vcpu));
-   kvm_guest_enter();
-   vcpu->mode = IN_GUEST_MODE;
+   while (ret > 0) {
+     /* ... */
+     local_irq_disable();
+     /* ... */
+     trace_kvm_entry(*vcpu_pc(vcpu));
+     kvm_guest_enter();
+     vcpu->mode = IN_GUEST_MODE;
 
-   ret = kvm_call_hyp(__kvm_vcpu_run, vcpu);
+     ret = kvm_call_hyp(__kvm_vcpu_run, vcpu);
 
-   vcpu->mode = OUTSIDE_GUEST_MODE;
-   vcpu->arch.last_pcpu = smp_processor_id();
-   kvm_guest_exit();
--  trace_kvm_exit(*vcpu_pc(vcpu));
-+  ++vcpu->cnt_exit;
-+  trace_kvm_exit(*vcpu_pc(vcpu), vcpu->cnt_exit);
+     vcpu->mode = OUTSIDE_GUEST_MODE;
+     vcpu->arch.last_pcpu = smp_processor_id();
+     kvm_guest_exit();
+-    trace_kvm_exit(*vcpu_pc(vcpu));
++    ++vcpu->cnt_exit;
++    trace_kvm_exit(*vcpu_pc(vcpu), vcpu->cnt_exit);
+     /* ... */
+```
+
+Then we modified the `kvm_exit` trace-event in `arch/arm/kvm/trace.h` to print exit
+count. The second one was to add our own trace event to record the HVC trap count, which
+is the hypervisor trap in ARM hypervisor mode. According to the ARM architecture
+reference manual, this exception happens whenever an `HVC` instruction is issued
+(i.e. the guest requested to switch to hypervisor mode. This might happen in a
+`virtio` defice) or when some exceptions was routed to the hypervisor.
+
+1. Add our trace event in `arch/arm/kvm/trace.h`
+
+    ```cpp
+    /* tracing exception file */
+    TRACE_EVENT(kvm_exchvc,
+      TP_PROTO(unsigned long vcpu_pc, int cnt_exchvc, int kvm_cond_valid),
+      TP_ARGS(vcpu_pc, cnt_exchvc, kvm_cond_valid),
+
+      TP_STRUCT__entry(
+        __field(unsigned long, vcpu_pc)
+        __field(int, cnt_exchvc)
+        __field(int, kvm_cond_valid)
+      ),
+
+      TP_fast_assign(
+        __entry->vcpu_pc = vcpu_pc;
+        __entry->cnt_exchvc = cnt_exchvc;
+        __entry->kvm_cond_valid = kvm_cond_valid;
+      ),
+
+      TP_printk("PC: 0x%08lx; trap count: %d; kvm_cond_valid: %s",
+        __entry->vcpu_pc,
+        __entry->cnt_exchvc,
+        __entry->kvm_cond_valid? "true" : "false")
+    );
+    ```
+
+1. Insert out trace events to appropiate points. We figured out that the main loop
+    will check for exception upon every exit, i.e.
+
+    ```cpp
+    int kvm_arch_vcpu_ioctl_run(/* ... */) {
+        /* ... */
+        kvm_guest_exit();
+        /* ... */
+        local_irq_enable();
+        /* ... */
+        ret = handle_exit(vcpu, run, ret);
+      }
+    ```
+
+    Hence we could safely insert our trace point in exception dispatching function:
+
+    ```cpp
+     int handle_exit(/* ... */) {
+       exit_handle_fn exit_handler;
+
+       switch (exception_index) {
+       /* ... */
+       case ARM_EXCEPTION_HVC:
+         if (!kvm_condition_valid(vcpu)) {
+     +     ++vcpu->cnt_exchvc;
+     +     trace_kvm_exchvc(*vcpu_pc(vcpu), vcpu->cnt_exchvc, 0);
+           kvm_skip_instr(vcpu, kvm_vcpu_trap_il_is32bit(vcpu));
+           return 1;
+         }
+
+     +   ++vcpu->cnt_exchvc;
+     +   trace_kvm_exchvc(*vcpu_pc(vcpu), vcpu->cnt_exchvc, 1);
+         exit_handler = kvm_get_exit_handler(vcpu);
+
+         return exit_handler(vcpu, run);
+    ```
+
+1. And the last step was to turn on our trace event.
+
+To record the exit count and the HVC trap count, we added two additional counters in
+the `kvm_vcpu` structure defined in `include/linux/kvm_host.h`:
+
+```cpp
+ struct kvm_vcpu {
    /* ... */
+ #endif
+ 	 bool preempted;
+ 	 struct kvm_vcpu_arch arch;
+
++  int cnt_exchvc;
++  int cnt_exit;
+ };
 ```
 
 ### Trace Result
