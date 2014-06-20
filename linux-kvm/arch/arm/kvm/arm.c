@@ -266,6 +266,7 @@ struct kvm_vcpu *kvm_arch_vcpu_create(struct kvm *kvm, unsigned int id)
 	err = kvm_vcpu_init(vcpu, kvm, id);
 	if (err)
 		goto free_vcpu;
+  vcpu->cnt_exc_hvc = 0;
 
 	err = create_hyp_mappings(vcpu, vcpu + 1);
 	if (err)

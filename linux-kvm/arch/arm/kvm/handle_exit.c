@@ -149,10 +149,13 @@ int handle_exit(struct kvm_vcpu *vcpu, struct kvm_run *run,
 		 * that fail their condition code check"
 		 */
 		if (!kvm_condition_valid(vcpu)) {
+      trace_kvm_exception_hvc(*vcpu_pc(vcpu), vcpu->cnt_exc_hvc, 0);
 			kvm_skip_instr(vcpu, kvm_vcpu_trap_il_is32bit(vcpu));
 			return 1;
 		}
 
+    ++vcpu->cnt_exc_hvc;
+    trace_kvm_exception_hvc(*vcpu_pc(vcpu), vcpu->cnt_exc_hvc, 1);
 		exit_handler = kvm_get_exit_handler(vcpu);
 
 		return exit_handler(vcpu, run);

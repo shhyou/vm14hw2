@@ -6,6 +6,29 @@
 #undef TRACE_SYSTEM
 #define TRACE_SYSTEM kvm
 
+/* tracing exception file */
+TRACE_EVENT(kvm_exception_hvc,
+  TP_PROTO(unsigned long vcpu_pc, int cnt_exc_hvc, int kvm_cond_valid),
+  TP_ARGS(vcpu_pc, cnt_exc_hvc, kvm_cond_valid),
+
+  TP_STRUCT__entry(
+    __field(unsigned long, vcpu_pc)
+    __field(int, cnt_exc_hvc)
+    __field(int, kvm_cond_valid)
+  ),
+
+  TP_fast_assign(
+    __entry->vcpu_pc = vcpu_pc;
+    __entry->cnt_exc_hvc = cnt_exc_hvc;
+    __entry->kvm_cond_valid = kvm_cond_valid;
+  ),
+
+  TP_printk("PC: 0x%08lx; trap count: %d; kvm_cond_valid: %s",
+    __entry->vcpu_pc,
+    __entry->cnt_exc_hvc,
+    __entry->kvm_cond_valid? "true" : "false")
+);
+
 /*
  * Tracepoints for entry/exit to guest
  */
