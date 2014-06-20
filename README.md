@@ -5,17 +5,17 @@ Virtual Machine Homework 2, Spring 2014
 
 ## Important Files & Directories
 
-- `arch/arm/kvm`
+- `arch/arm/kvm/`
 
     * `arm.c`
-    * `handle_exit.h`
+    * `handle_exit.c`
     * `trace.h`
 
-- `arch/arm/include/asm`
+- `arch/arm/include/asm/`
 
     * `kvm_asm.h`
 
-- `include/include/asm`
+- `include/include/`
 
     * `kvm_host.h`
 
