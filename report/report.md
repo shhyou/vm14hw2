@@ -16,6 +16,8 @@
     traps in the **kvm** module. We also run serveral benchmarks on multiple guest VMs
     to observe the loadings.
 
+![VM screenshot](./host-guest-qemu.jpg)
+
 ## Part I - Trap Profiling
 
 In this experiment, we traced several events in the KVM to see how many traps are there.
@@ -305,13 +307,53 @@ event in some places):
 Similar places occured many times, each time having different PC. Currently we
 have no explanation about it.
 
-## Part II - Experimenting Multiple Guests
-
-
-
-## Discussion
+### Discussions
 
 some notes on `kvm_emulate_insn`
+
+## Part II - Experimenting Multiple Guests
+
+### Difficulties Setting Up The Environment
+
+We were confused about the purpose of Part IV requirement initially. Furthermore,
+we did not know how to build up the host system. We assumed that the `qemu-debootstrap`
+was an extension program which was appended on the previous host system. However,
+it was not the case. This type of file system was different from those based on
+image file, instead, it was stored in a folder. After storing the whole file system
+into an image file, we were able to boot up the system.
+
+A next interesting point was encountered when we testing benchmarks in both host
+and guest system, we found out that some binary which was based on ARM architecture
+in host system could not be executed in guest system, but some of them could. After
+doing some experiments, we finally figured out the reason. Some benchmarks used
+dynamic library linking instead of static library linking. Thus, once host system
+library was different from the guest one, the binary file would encounter a load
+error.
+
+### Benchmarking Guests
+
+We used five benchmarks from the MiBench (http://www.eecs.umich.edu/mibench/source.html)
+to test the performance of each virtual machine, including `telecomm/adpcm`,
+`telecomm/gsm`, `telecomm/CRC32`, `telecomm/FFT`, and `comsumer/jpeg`. The
+following table shows the experiment result. There are five major rows, each stands
+for a benchmark. There are five columns, including local system, host system, one
+guest system on host system, and two guest systems on host system. Two-guest-systems
+experiment was designed to test system performance with heavy loading. To be
+specific, two same benchmarks were ran on two guest system individually, and
+simultaneously.
+
+![benchmark](./table.jpg)
+
+### Discussions
+
+There is a huge performance gap between local and host system. However, it is
+surprising that guest system has little overhead when compared with host system.
+The reason may be that ARM-to-X86 simulation is harder than ARM-to-ARM one.
+
+When two guest system is running on one same host system, performance is about
+half of the original one, which sounds pretty reasonable. The slightly difference
+on execution time between two guest systems may be caused by context-switch
+priority.
 
 ## Conclusion
 
