@@ -7,7 +7,7 @@
 #define TRACE_SYSTEM kvm
 
 /* tracing exception file */
-TRACE_EVENT(kvm_exception_hvc,
+TRACE_EVENT(kvm_exchvc,
   TP_PROTO(unsigned long vcpu_pc, int cnt_exc_hvc, int kvm_cond_valid),
   TP_ARGS(vcpu_pc, cnt_exc_hvc, kvm_cond_valid),
 
