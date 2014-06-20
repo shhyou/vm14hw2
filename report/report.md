@@ -309,7 +309,33 @@ have no explanation about it.
 
 ### Discussions
 
-some notes on `kvm_emulate_insn`
+When we booted either the host or the guest, there were some places where the boot
+process hangs very long. We didn't know if it was caused by some I/O failure or
+wrong device settings, but we suspected that it was where the strange trace
+messages get logged.
+
+Apart from the strange HVC trap events, we also found that the time in the guest
+virtual machine differs from that of the actual running time on the host machine.
+This might be an indicator on whether the virtualization is effecient.
+
+![guest running time](./host-running-client-time.jpg)
+
+In the above screenshot, the guest is running to 42.9s where the host actually runs
+1 minute. So the speed in the guest is only about 2/3 of the host in this case. Note
+that the guest time differs from the above trace results since we're not enabling
+tracing this time. If so, the running time will be much larger.
+
+We once tried to find the trace event `kvm_emulate_insn` on our machine. However,
+later we discovered that it only exists on x86 machines. This means that the ARM
+processor is actually doing well in supporting virtualization so we don't need
+much emulation.
+
+To support this argument, we may not that the exit count (from `kvm_exit`) and the
+HVC trap count (from `kvm_exchvc`) aren't equal, but the former number is very
+close to the latter one. This means that for most of the traps (or any other reason)
+that causes the virtualization to get back to the hypervisor, only a small amount
+of nubmer is caused by other routed exceptions. We spent most of the time on hypervisor
+calls, and for other times we almost avoided other overheads.
 
 ## Part II - Experimenting Multiple Guests
 
@@ -336,7 +362,9 @@ We used five benchmarks from the MiBench (http://www.eecs.umich.edu/mibench/sour
 to test the performance of each virtual machine, including `telecomm/adpcm`,
 `telecomm/gsm`, `telecomm/CRC32`, `telecomm/FFT`, and `comsumer/jpeg`. The
 following table shows the experiment result. There are five major rows, each stands
-for a benchmark. There are five columns, including local system, host system, one
+for a benchmark.
+
+There are five columns, including local system, host system, one
 guest system on host system, and two guest systems on host system. Two-guest-systems
 experiment was designed to test system performance with heavy loading. To be
 specific, two same benchmarks were ran on two guest system individually, and
