@@ -248,7 +248,62 @@ the `kvm_vcpu` structure defined in `include/linux/kvm_host.h`:
  };
 ```
 
+Upon tracing the code, we actually found a trace event `trace_kvm_hvc` in the HVC
+handleing function, `handle_hvc`. That was, we actually didn't really need to create
+a brand new trace event. Anyway, we did it for fun.
+
 ### Trace Result
+
+The result was interesting. Since traps to the hypervisor mode is non-stopping, we
+cannot count the exact number of traps during guest boot-up. We hence counts the
+trap number of guest boot-up followed by an immediate `poweroff`.
+
+The result count is as follows.
+
+```
+179.182896: kvm_entry:  PC: 0x802c1f24
+179.183041: kvm_exit:   PC: 0x802c21c8; exit count: 80671
+179.183096: kvm_exchvc: PC: 0x802c21c8; trap count: 74322; kvm_cond_valid: true
+179.183120: kvm_guest_fault: ipa 0x1c010000, hsr 0x93800006, hxfar 0xf80100a8, pc 0x802c21c8
+179.183166: kvm_userspace_exit: reason KVM_EXIT_MMIO (6)
+179.200710: kvm_userspace_exit: reason restart (4)
+```
+
+And running it again turned out to have similar trap counts:
+
+```
+181.829151: kvm_entry:  PC: 0x802c1f24
+181.829296: kvm_exit:   PC: 0x802c21c8; exit count: 81072
+181.829351: kvm_exchvc: PC: 0x802c21c8; trap count: 74382; kvm_cond_valid: true
+181.829375: kvm_guest_fault: ipa 0x1c010000, hsr 0x93800006, hxfar 0xf80100a8, pc 0x802c21c8
+```
+
+Interestingly, we found a large number of HVC trap events without interleaving
+`kvm_guest_fault` (which we taken to be memory faults as indicated by the `kvm_userspace_exit`
+event in some places):
+
+```
+... repeated many many times ...
+124.408340: kvm_entry:  PC: 0x8001086c
+124.408389: kvm_exit:   PC: 0x80010868; exit count: 1777
+124.408428: kvm_exchvc: PC: 0x80010868; trap count: 1760; kvm_cond_valid: true
+124.408477: kvm_entry:  PC: 0x8001086c
+124.408526: kvm_exit:   PC: 0x80010868; exit count: 1778
+124.408565: kvm_exchvc: PC: 0x80010868; trap count: 1761; kvm_cond_valid: true
+124.408628: kvm_entry:  PC: 0x8001086c
+124.408675: kvm_exit:   PC: 0x80010868; exit count: 1779
+124.408714: kvm_exchvc: PC: 0x80010868; trap count: 1762; kvm_cond_valid: true
+124.408763: kvm_entry:  PC: 0x8001086c
+124.408812: kvm_exit:   PC: 0x80010868; exit count: 1780
+124.408851: kvm_exchvc: PC: 0x80010868; trap count: 1763; kvm_cond_valid: true
+124.408900: kvm_entry:  PC: 0x8001086c
+124.408949: kvm_exit:   PC: 0x80010868; exit count: 1781
+124.408988: kvm_exchvc: PC: 0x80010868; trap count: 1764; kvm_cond_valid: true
+... repeated many many times ...
+```
+
+Similar places occured many times, each time having different PC. Currently we
+have no explanation about it.
 
 ## Part II - Experimenting Multiple Guests
 
