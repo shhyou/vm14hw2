@@ -3,7 +3,41 @@ vm14hw2
 
 Virtual Machine Homework 2, Spring 2014
 
-## Important Files & Directories
+## Overview
+
+- Topic: a study of system virtual machine
+
+- Team
+
+    * b00902064 Hao-En Sung @ ntu csie
+    * b00902107 Shu-Hung You @ ntu csie
+
+- Abstract
+
+    Our code can be found at https://github.com/suhorng/vm14hw2
+
+    > We studied the same ISA system virtual machine on a simulated ARM Cortex A15x1
+    platform. We built one host VM which ran one or more guest VMs, traced the hypervisor
+    traps in the **kvm** module. We also ran serveral benchmarks on multiple guest VMs
+    to observe the loadings.
+
+- Source File Structure
+
+    * `README.md`: some notes and explanation of the repo.
+    * `report.pdf`: our study report
+    * `linuv-kvm`: our **full** source code; build kernel image here.
+    * `fs/`: where we put our `host_disk.img`; absent on the repo.
+        + `fs/host_utils/`: the scripts we put on the host VM to help
+            manipulating traces, launch the guest VM, etc.
+    * `boot/`: our `params` file; the other `.dtb` files are not pushed
+    * `report/`: the source of our report
+
+- Virtual Machines' Screenshot
+
+    ![VM screenshot](./report/host-guest-qemu.jpg)
+
+## Homework Notes
+### Important Files & Directories
 
 - `arch/arm/kvm/`
 
