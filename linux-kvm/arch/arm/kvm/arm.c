@@ -267,6 +267,10 @@ struct kvm_vcpu *kvm_arch_vcpu_create(struct kvm *kvm, unsigned int id)
 	if (err)
 		goto free_vcpu;
 
+  /* initialize our counters upon new virtual CPU creation */
+  vcpu->cnt_exchvc = 0;
+  vcpu->cnt_exit = 0;
+
 	err = create_hyp_mappings(vcpu, vcpu + 1);
 	if (err)
 		goto vcpu_uninit;
@@ -582,7 +586,8 @@ int kvm_arch_vcpu_ioctl_run(struct kvm_vcpu *vcpu, struct kvm_run *run)
 		vcpu->mode = OUTSIDE_GUEST_MODE;
 		vcpu->arch.last_pcpu = smp_processor_id();
 		kvm_guest_exit();
-		trace_kvm_exit(*vcpu_pc(vcpu));
+    ++vcpu->cnt_exit;
+		trace_kvm_exit(*vcpu_pc(vcpu), vcpu->cnt_exit);
 		/*
 		 * We may have taken a host interrupt in HYP mode (ie
 		 * while executing the guest). This interrupt is still
