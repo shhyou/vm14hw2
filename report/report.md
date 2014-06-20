@@ -16,6 +16,18 @@
     traps in the **kvm** module. We also run serveral benchmarks on multiple guest VMs
     to observe the loadings.
 
+- Source File Structure
+
+    * `README.md`: some notes and explanation of the repo.
+    * `linuv-kvm`: our **full** source code; build kernel image here.
+    * `fs/`: where we put our `host_disk.img`; absent on the repo.
+        + `fs/host_utils/`: the scripts we put on the host VM to help
+            manipulating traces, launch the guest VM, etc.
+    * `boot/`: our `params` file; the other `.dtb` files are not pushed
+    * `report/`: the source of our report
+
+- Virtual Machines' Screenshot
+
 ![VM screenshot](./host-guest-qemu.jpg)
 
 ## Part I - Trap Profiling
@@ -385,3 +397,16 @@ priority.
 
 ## Conclusion
 
+In this homework, we studied how the kernel module KVM runs in hypervisor mode to
+support efficient CPU virtualization as well as benchmarked the virtualized CPU on
+one or more guest virtual machines.
+
+We learnt the KVM kernel module by modifying its code, adding our own trace functions
+and modifying the existing ones. From the trace result, we speculated that the hypervisor
+mode was doing a good job of virtualizing the CPU. We can also estimate the running-speed
+ratio of the guest from the timestamp in the log.
+
+For multiple guest benchmarking, we guessed that the guest shall share their time
+with none having priorities over the others. The guest machines ran almost as fast as
+the host virtual machine, yet the host virtual machine ran much slower than our **real**
+machine. The simulator was faithfully doing its job, but simulating is nonetheless slow.
