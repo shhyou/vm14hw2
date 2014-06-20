@@ -270,7 +270,8 @@ struct kvm_vcpu {
 	bool preempted;
 	struct kvm_vcpu_arch arch;
 
-  int cnt_exc_hvc;
+  int cnt_exchvc;
+  int cnt_exit;
 };
 
 static inline int kvm_vcpu_exiting_guest_mode(struct kvm_vcpu *vcpu)

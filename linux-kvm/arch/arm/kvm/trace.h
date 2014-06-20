@@ -8,24 +8,24 @@
 
 /* tracing exception file */
 TRACE_EVENT(kvm_exchvc,
-  TP_PROTO(unsigned long vcpu_pc, int cnt_exc_hvc, int kvm_cond_valid),
-  TP_ARGS(vcpu_pc, cnt_exc_hvc, kvm_cond_valid),
+  TP_PROTO(unsigned long vcpu_pc, int cnt_exchvc, int kvm_cond_valid),
+  TP_ARGS(vcpu_pc, cnt_exchvc, kvm_cond_valid),
 
   TP_STRUCT__entry(
     __field(unsigned long, vcpu_pc)
-    __field(int, cnt_exc_hvc)
+    __field(int, cnt_exchvc)
     __field(int, kvm_cond_valid)
   ),
 
   TP_fast_assign(
     __entry->vcpu_pc = vcpu_pc;
-    __entry->cnt_exc_hvc = cnt_exc_hvc;
+    __entry->cnt_exchvc = cnt_exchvc;
     __entry->kvm_cond_valid = kvm_cond_valid;
   ),
 
   TP_printk("PC: 0x%08lx; trap count: %d; kvm_cond_valid: %s",
     __entry->vcpu_pc,
-    __entry->cnt_exc_hvc,
+    __entry->cnt_exchvc,
     __entry->kvm_cond_valid? "true" : "false")
 );
 
@@ -44,22 +44,24 @@ TRACE_EVENT(kvm_entry,
 		__entry->vcpu_pc		= vcpu_pc;
 	),
 
-	TP_printk("PC: 0x%08lx", __entry->vcpu_pc)
+	TP_printk(" PC: 0x%08lx", __entry->vcpu_pc)
 );
 
 TRACE_EVENT(kvm_exit,
-	TP_PROTO(unsigned long vcpu_pc),
-	TP_ARGS(vcpu_pc),
+	TP_PROTO(unsigned long vcpu_pc, int exit_cnt),
+	TP_ARGS(vcpu_pc, exit_cnt),
 
 	TP_STRUCT__entry(
 		__field(	unsigned long,	vcpu_pc		)
+    __field(  int,            exit_cnt  )
 	),
 
 	TP_fast_assign(
 		__entry->vcpu_pc		= vcpu_pc;
+    __entry->exit_cnt   = exit_cnt;
 	),
 
-	TP_printk("PC: 0x%08lx", __entry->vcpu_pc)
+	TP_printk("  PC: 0x%08lx; exit count: %d", __entry->vcpu_pc, __entry->exit_cnt)
 );
 
 TRACE_EVENT(kvm_guest_fault,
